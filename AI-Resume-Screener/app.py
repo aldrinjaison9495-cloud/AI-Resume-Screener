@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from groq import Groq
 from styles import page_style
 from pdf_generator import generate_pdf
+import plotly.graph_objects as go
 import re
 
 
@@ -17,7 +18,8 @@ load_dotenv()
 st.set_page_config(
     page_title="AI Resume Analyzer",
     page_icon="🚀",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 st.markdown(page_style, unsafe_allow_html=True)
 
@@ -28,31 +30,56 @@ st.markdown(page_style, unsafe_allow_html=True)
 
 st.sidebar.markdown(
     """
-    <h1 style='text-align:center;
-    color:#00FFD1;
-    font-size:32px;
-    font-weight:800;'>
-    🚀 Resume AI
-    </h1>
+    <div class="sidebar-title">
+        🚀 Resume AI
+    </div>
     """,
     unsafe_allow_html=True
 )
 
 st.sidebar.markdown("---")
 
-page = st.sidebar.radio(
-    "📌 Navigation",
-    [
-        "📄 Upload Resume",
-        "📊 Resume Score",
-        "📈 ATS Score",
-        "🧠 AI Analysis",
-        "⬇ Download PDF"
-    ]
+# -----------------------------------
+# MODERN NAVIGATION
+# -----------------------------------
+
+st.sidebar.markdown(
+    """
+    <div class="nav-title">
+    🚀 Navigation
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
-st.sidebar.markdown("---")
+# DEFAULT PAGE
 
+if "page" not in st.session_state:
+    st.session_state.page = "📄 Upload Resume"
+
+# BUTTONS
+
+if st.sidebar.button("📄 Upload Resume"):
+    st.session_state.page = "📄 Upload Resume"
+
+if st.sidebar.button("📊 Resume Score"):
+    st.session_state.page = "📊 Resume Score"
+
+if st.sidebar.button("📈 ATS Score"):
+    st.session_state.page = "📈 ATS Score"
+
+if st.sidebar.button("🧠 AI Analysis"):
+    st.session_state.page = "🧠 AI Analysis"
+
+if st.sidebar.button("⬇ Download PDF"):
+    st.session_state.page = "⬇ Download PDF"
+
+# CURRENT PAGE
+
+page = st.session_state.page
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("<br>", unsafe_allow_html=True)
 st.sidebar.markdown("## ✨ Features")
 
 st.sidebar.success("AI Resume Analysis")
@@ -89,15 +116,23 @@ client = Groq(
 # -----------------------------------
 
 st.markdown(
-    '<div class="title">🚀 AI Resume Screening System</div>',
+    """
+    <div class="title">
+        AI <span>RESUME</span><br>
+        <span>SCREENER</span>
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
 st.markdown(
-    '<div class="subtitle">Upload your resume and get AI-powered career insights</div>',
+    """
+    <div class="subtitle">
+        Smart Resume Analysis • ATS Optimization • AI Career Insights
+    </div>
+    """,
     unsafe_allow_html=True
 )
-
 # -----------------------------------
 # UPLOAD SECTION
 # -----------------------------------
@@ -218,21 +253,21 @@ Resume:
 
     for i in range(len(sections)):
 
-        start = result.find(sections[i])
+        start = str(result).find(sections[i])
 
         if start != -1:
 
-            end = len(result)
+            end = len(str(result))
 
             for j in range(i + 1, len(sections)):
 
-                next_start = result.find(sections[j])
+                next_start = str(result).find(sections[j])
 
                 if next_start != -1 and next_start > start:
                     end = next_start
                     break
 
-            content = result[start:end].replace(
+            content = str(result)[start:end].replace(
                 sections[i],
                 ""
             ).strip()
@@ -245,7 +280,7 @@ Resume:
 
     resume_match = re.search(
         r"Resume Score:\s*(\d+(\.\d+)?)\/10",
-        result,
+        str(result),
         re.IGNORECASE
     )
 
@@ -263,11 +298,31 @@ Resume:
 
             st.subheader("📊 Resume Score")
 
-            st.progress(resume_score)
+            fig = go.Figure(go.Indicator(
+                mode = "gauge+number",
+                value = resume_score,
+                title = {'text': "Resume Score"},
+                gauge = {
+                    'axis': {'range': [0, 100]},
+                    'bar': {'color': "#38BDF8"},
+                    'bgcolor': "white",
+                    'borderwidth': 2,
+                    'bordercolor': "#0F172A",
+                    'steps': [
+                        {'range': [0, 50], 'color': "#1E293B"},
+                        {'range': [50, 80], 'color': "#334155"},
+                        {'range': [80, 100], 'color': "#0EA5E9"}
+                    ]
+                }
+            ))
 
-            st.success(
-                f"Resume Score: {resume_score}%"
+            fig.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                font={'color': "white", 'size': 18},
+                height=350
             )
+
+            st.plotly_chart(fig, use_container_width=True)
 
             st.markdown(
                 '</div>',
@@ -280,10 +335,9 @@ Resume:
 
     ats_match = re.search(
         r"ATS Score.*?(\d+(\.\d+)?)\/10",
-        result,
+        str(result),
         re.IGNORECASE | re.DOTALL
     )
-
     if ats_match:
 
         ats_score = float(ats_match.group(1))
@@ -298,11 +352,31 @@ Resume:
 
             st.subheader("📈 ATS Score")
 
-            st.progress(ats_score)
+            fig = go.Figure(go.Indicator(
+                mode = "gauge+number",
+                value = ats_score,
+                title = {'text': "ATS Score"},
+                gauge = {
+                    'axis': {'range': [0, 100]},
+                    'bar': {'color': "#6366F1"},
+                    'bgcolor': "white",
+                    'borderwidth': 2,
+                    'bordercolor': "#0F172A",
+                    'steps': [
+                        {'range': [0, 50], 'color': "#1E293B"},
+                        {'range': [50, 80], 'color': "#334155"},
+                        {'range': [80, 100], 'color': "#6366F1"}
+                    ]
+                }
+            ))
 
-            st.success(
-                f"ATS Score: {ats_score}%"
+            fig.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                font={'color': "white", 'size': 18},
+                height=350
             )
+
+            st.plotly_chart(fig, use_container_width=True)
 
             st.markdown(
                 '</div>',
